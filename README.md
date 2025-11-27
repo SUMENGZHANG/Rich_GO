@@ -132,6 +132,8 @@ go list -m all
 
 📦 **internal 包详解**: 请查看 [docs/internal_package_explained.md](docs/internal_package_explained.md)
 
+🌐 **Go Web 服务器底层架构**: 请查看 [docs/go_web_server_architecture.md](docs/go_web_server_architecture.md)
+
 ## 框架选择
 
 企业级 Go 服务端开发常用的框架选择：
