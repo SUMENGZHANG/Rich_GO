@@ -128,6 +128,10 @@ go list -m all
 
 📊 **程序执行流程图解**: 请查看 [docs/program_execution_flow.md](docs/program_execution_flow.md)
 
+🏗️ **项目架构详解**: 请查看 [docs/project_architecture.md](docs/project_architecture.md)
+
+📦 **internal 包详解**: 请查看 [docs/internal_package_explained.md](docs/internal_package_explained.md)
+
 ## 框架选择
 
 企业级 Go 服务端开发常用的框架选择：
