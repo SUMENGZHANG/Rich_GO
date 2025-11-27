@@ -1,7 +1,7 @@
 package server
 
 import (
-	"net/http"
+	"rich_go/internal/server/handlers"
 
 	"github.com/gin-gonic/gin"
 )
@@ -42,108 +42,45 @@ func setupMiddleware(router *gin.Engine) {
 // setupRoutes 设置路由
 func setupRoutes(router *gin.Engine) {
 	// 健康检查接口
-	router.GET("/health", healthCheck)
+	router.GET("/health", handlers.HealthCheck)
 
 	// API v1 路由组
 	v1 := router.Group("/api/v1")
 	{
 		// 用户相关路由
-		users := v1.Group("/users")
-		{
-			users.GET("", listUsers)
-			users.GET("/:id", getUser)
-			users.POST("", createUser)
-			users.PUT("/:id", updateUser)
-			users.DELETE("/:id", deleteUser)
-		}
+		setupUserRoutes(v1)
+		
+		// 优惠券相关路由
+		setupCouponRoutes(v1)
+	}
+}
+
+// setupUserRoutes 设置用户相关路由
+func setupUserRoutes(v1 *gin.RouterGroup) {
+	users := v1.Group("/users")
+	{
+		users.GET("", handlers.ListUsers)
+		users.GET("/:id", handlers.GetUser)
+		users.POST("", handlers.CreateUser)
+		users.PUT("/:id", handlers.UpdateUser)
+		users.DELETE("/:id", handlers.DeleteUser)
+	}
+}
+
+// setupCouponRoutes 设置优惠券相关路由
+func setupCouponRoutes(v1 *gin.RouterGroup) {
+	coupons := v1.Group("/coupons")
+	{
+		coupons.GET("", handlers.ListCoupons)
+		coupons.GET("/:id", handlers.GetCoupon)
+		coupons.POST("", handlers.CreateCoupon)
+		coupons.PUT("/:id", handlers.UpdateCoupon)
+		coupons.DELETE("/:id", handlers.DeleteCoupon)
 	}
 }
 
 // Start 启动 HTTP 服务器
 func (s *HTTPServer) Start() error {
 	return s.router.Run(":" + s.port)
-}
-
-// healthCheck 健康检查接口
-func healthCheck(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"status":  "ok",
-		"message": "服务运行正常",
-	})
-}
-
-// listUsers 获取用户列表
-func listUsers(c *gin.Context) {
-	// TODO: 实现获取用户列表逻辑
-	c.JSON(http.StatusOK, gin.H{
-		"users": []gin.H{
-			{"id": 1, "name": "用户1"},
-			{"id": 2, "name": "用户2"},
-		},
-	})
-}
-
-// getUser 获取单个用户
-func getUser(c *gin.Context) {
-	id := c.Param("id")
-	// TODO: 从数据库获取用户信息
-	c.JSON(http.StatusOK, gin.H{
-		"id":   id,
-		"name": "用户" + id,
-	})
-}
-
-// createUser 创建用户
-func createUser(c *gin.Context) {
-	var user struct {
-		Name  string `json:"name" binding:"required"`
-		Email string `json:"email" binding:"required,email"`
-	}
-
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	// TODO: 保存用户到数据库
-	c.JSON(http.StatusCreated, gin.H{
-		"message": "用户创建成功",
-		"user":    user,
-	})
-}
-
-// updateUser 更新用户
-func updateUser(c *gin.Context) {
-	id := c.Param("id")
-	var user struct {
-		Name  string `json:"name"`
-		Email string `json:"email" binding:"omitempty,email"`
-	}
-
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	// TODO: 更新用户信息
-	c.JSON(http.StatusOK, gin.H{
-		"message": "用户更新成功",
-		"id":      id,
-		"user":    user,
-	})
-}
-
-// deleteUser 删除用户
-func deleteUser(c *gin.Context) {
-	id := c.Param("id")
-	// TODO: 从数据库删除用户
-	c.JSON(http.StatusOK, gin.H{
-		"message": "用户删除成功",
-		"id":      id,
-	})
 }
 
