@@ -1,0 +1,29 @@
+# 应用配置示例文件
+# 复制此文件为 config.yaml 并修改相应的配置值
+
+app:
+  name: "Rich_GO"
+  version: "1.0.0"
+  port: 8080
+  env: "development"  # development, production, testing
+
+server:
+  host: "0.0.0.0"
+  port: 8080
+  read_timeout: 30s
+  write_timeout: 30s
+
+log:
+  level: "info"  # debug, info, warn, error
+  format: "json"  # json, text
+  output: "stdout"  # stdout, file
+
+database:
+  # 数据库配置示例（根据实际使用的数据库调整）
+  # host: "localhost"
+  # port: 5432
+  # user: "user"
+  # password: "password"
+  # dbname: "rich_go"
+  # sslmode: "disable"
+
