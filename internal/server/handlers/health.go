@@ -1,16 +1,15 @@
 package handlers
 
 import (
-	"net/http"
+	"rich_go/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
 
 // HealthCheck 健康检查接口
 func HealthCheck(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"status":  "ok",
-		"message": "服务运行正常",
+	response.SuccessWithMessage(c, "服务运行正常", gin.H{
+		"status": "ok",
 	})
 }
 

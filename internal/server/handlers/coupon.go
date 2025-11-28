@@ -1,56 +1,61 @@
 package handlers
 
 import (
-	"net/http"
+	"rich_go/internal/service"
+	"rich_go/pkg/errors"
+	"rich_go/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
 
+// CouponHandler 优惠券处理器
+type CouponHandler struct {
+	couponService service.CouponService
+}
+
+// NewCouponHandler 创建优惠券处理器实例
+func NewCouponHandler(couponService service.CouponService) *CouponHandler {
+	return &CouponHandler{
+		couponService: couponService,
+	}
+}
+
 // ListCoupons 获取优惠券列表
-func ListCoupons(c *gin.Context) {
-	// TODO: 实现获取优惠券列表逻辑
-	c.JSON(http.StatusOK, gin.H{
-		"coupons": []gin.H{
-			{
-				"id":           1,
-				"name":         "新用户专享",
-				"description":  "新用户首次购买立减10元",
-				"discountType": "fixed",
-				"discountValue": 10,
-				"minAmount":    50,
-				"status":       "active",
-			},
-			{
-				"id":           2,
-				"name":         "满减优惠",
-				"description":  "满100减20",
-				"discountType": "fixed",
-				"discountValue": 20,
-				"minAmount":    100,
-				"status":       "active",
-			},
-		},
-	})
+func (h *CouponHandler) ListCoupons(c *gin.Context) {
+	coupons, err := h.couponService.ListCoupons(c.Request.Context())
+	if err != nil {
+		if be, ok := errors.AsBusinessError(err); ok {
+			response.Error(c, be.Code, be.Message)
+			return
+		}
+		response.InternalServerError(c, err.Error())
+		return
+	}
+	response.Success(c, gin.H{"coupons": coupons})
 }
 
 // GetCoupon 获取单个优惠券
-func GetCoupon(c *gin.Context) {
+func (h *CouponHandler) GetCoupon(c *gin.Context) {
 	id := c.Param("id")
-	// TODO: 从数据库获取优惠券信息
-	c.JSON(http.StatusOK, gin.H{
-		"id":           id,
-		"name":         "优惠券" + id,
-		"description":  "这是优惠券" + id + "的描述",
-		"discountType": "fixed",
-		"discountValue": 10,
-		"minAmount":    50,
-		"status":       "active",
-	})
+	coupon, err := h.couponService.GetCoupon(c.Request.Context(), id)
+	if err != nil {
+		if be, ok := errors.AsBusinessError(err); ok {
+			if be.Code == errors.CodeCouponNotFound || be.Code == errors.CodeInvalidCouponID {
+				response.NotFound(c, be.Message)
+			} else {
+				response.Error(c, be.Code, be.Message)
+			}
+			return
+		}
+		response.InternalServerError(c, err.Error())
+		return
+	}
+	response.Success(c, coupon)
 }
 
 // CreateCoupon 创建优惠券
-func CreateCoupon(c *gin.Context) {
-	var coupon struct {
+func (h *CouponHandler) CreateCoupon(c *gin.Context) {
+	var req struct {
 		Name         string  `json:"name" binding:"required"`
 		Description  string  `json:"description"`
 		DiscountType string  `json:"discountType" binding:"required,oneof=fixed percent"`
@@ -59,29 +64,37 @@ func CreateCoupon(c *gin.Context) {
 		Status       string  `json:"status" binding:"omitempty,oneof=active inactive"`
 	}
 
-	if err := c.ShouldBindJSON(&coupon); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
 		return
 	}
 
-	// 设置默认状态
-	if coupon.Status == "" {
-		coupon.Status = "active"
+	createReq := &service.CreateCouponRequest{
+		Name:         req.Name,
+		Description:  req.Description,
+		DiscountType: req.DiscountType,
+		DiscountValue: req.DiscountValue,
+		MinAmount:    req.MinAmount,
+		Status:       req.Status,
 	}
 
-	// TODO: 保存优惠券到数据库
-	c.JSON(http.StatusCreated, gin.H{
-		"message": "优惠券创建成功",
-		"coupon":  coupon,
-	})
+	coupon, err := h.couponService.CreateCoupon(c.Request.Context(), createReq)
+	if err != nil {
+		if be, ok := errors.AsBusinessError(err); ok {
+			response.Error(c, be.Code, be.Message)
+			return
+		}
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.SuccessWithMessage(c, "优惠券创建成功", coupon)
 }
 
 // UpdateCoupon 更新优惠券
-func UpdateCoupon(c *gin.Context) {
+func (h *CouponHandler) UpdateCoupon(c *gin.Context) {
 	id := c.Param("id")
-	var coupon struct {
+	var req struct {
 		Name         string  `json:"name"`
 		Description  string  `json:"description"`
 		DiscountType string  `json:"discountType" binding:"omitempty,oneof=fixed percent"`
@@ -90,28 +103,54 @@ func UpdateCoupon(c *gin.Context) {
 		Status       string  `json:"status" binding:"omitempty,oneof=active inactive"`
 	}
 
-	if err := c.ShouldBindJSON(&coupon); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
 		return
 	}
 
-	// TODO: 更新优惠券信息
-	c.JSON(http.StatusOK, gin.H{
-		"message": "优惠券更新成功",
-		"id":      id,
-		"coupon":  coupon,
-	})
+	updateReq := &service.UpdateCouponRequest{
+		Name:         req.Name,
+		Description:  req.Description,
+		DiscountType: req.DiscountType,
+		DiscountValue: req.DiscountValue,
+		MinAmount:    req.MinAmount,
+		Status:       req.Status,
+	}
+
+	coupon, err := h.couponService.UpdateCoupon(c.Request.Context(), id, updateReq)
+	if err != nil {
+		if be, ok := errors.AsBusinessError(err); ok {
+			if be.Code == errors.CodeCouponNotFound || be.Code == errors.CodeInvalidCouponID {
+				response.NotFound(c, be.Message)
+			} else {
+				response.Error(c, be.Code, be.Message)
+			}
+			return
+		}
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.SuccessWithMessage(c, "优惠券更新成功", coupon)
 }
 
 // DeleteCoupon 删除优惠券
-func DeleteCoupon(c *gin.Context) {
+func (h *CouponHandler) DeleteCoupon(c *gin.Context) {
 	id := c.Param("id")
-	// TODO: 从数据库删除优惠券
-	c.JSON(http.StatusOK, gin.H{
-		"message": "优惠券删除成功",
-		"id":      id,
-	})
+	err := h.couponService.DeleteCoupon(c.Request.Context(), id)
+	if err != nil {
+		if be, ok := errors.AsBusinessError(err); ok {
+			if be.Code == errors.CodeCouponNotFound || be.Code == errors.CodeInvalidCouponID {
+				response.NotFound(c, be.Message)
+			} else {
+				response.Error(c, be.Code, be.Message)
+			}
+			return
+		}
+		response.InternalServerError(c, err.Error())
+		return
+	}
+
+	response.SuccessWithMessage(c, "优惠券删除成功", gin.H{"id": id})
 }
 
